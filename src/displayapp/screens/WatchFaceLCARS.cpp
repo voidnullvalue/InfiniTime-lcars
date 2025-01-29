@@ -2,6 +2,8 @@
 
 #include <lvgl/lvgl.h>
 #include <cstdio>
+#include <cstring>
+#include <string>
 #include "displayapp/screens/Symbols.h"
 #include "displayapp/screens/WeatherSymbols.h"
 #include "displayapp/screens/BleIcon.h"
@@ -156,6 +158,8 @@ WatchFaceLCARS::WatchFaceLCARS(Controllers::DateTime& dateTimeController,
   labelBattery = label_make_with_font(system_container, 0, 0, grayColor, font_antonio_21, LV_ALIGN_IN_TOP_RIGHT, "0 %");
   bleIcon = label_make(labelBattery, -5, 0, orangeColor, LV_ALIGN_OUT_LEFT_MID, Symbols::bluetooth);
   lv_obj_align(bleIcon, labelBattery, LV_ALIGN_OUT_LEFT_MID, -5, 0); // TODO: Find out why this align is necessary
+  notificationIcon  = label_make(system_container, 0, 0, orangeColor, LV_ALIGN_IN_TOP_LEFT, Symbols::message);
+  lv_obj_set_hidden(notificationIcon, true);
 
   // Date
   dateContainer = label_container_make(lv_scr_act(), 65, 50, 175, 20, LV_ALIGN_IN_TOP_LEFT);
@@ -235,6 +239,7 @@ void WatchFaceLCARS::Refresh() {
     UpdateStepCount();
     UpdateBatteryPercent();
     UpdateBLE();
+    UpdateNotification();
     UpdateHeartRate();
     UpdateWeather();
     currentDateTime = std::chrono::time_point_cast<std::chrono::minutes>(currentNanoSeconds.Get());
@@ -247,6 +252,33 @@ void WatchFaceLCARS::Refresh() {
       }
     }
   }
+}
+
+void WatchFaceLCARS::UpdateNotification() {
+  notificationState = notificationManager.AreNewNotificationsAvailable();
+  notificationCount = notificationManager.NbNotifications();
+
+  if (!(notificationState.IsUpdated() || notificationCount.IsUpdated())) {
+    return;
+  }
+
+  if (notificationManager.IsEmpty()) {
+    lv_obj_set_hidden(notificationIcon, true);
+    return;
+  }
+
+  lv_obj_set_hidden(notificationIcon, false);
+
+  const auto cnt = notificationCount.Get();
+  const bool hasNew = notificationState.Get();
+
+  if (hasNew) {
+    lv_label_set_text_fmt(notificationIcon, "%s%s %d", Symbols::info, Symbols::message, cnt);
+  } else {
+    lv_label_set_text_fmt(notificationIcon, "%s %d", Symbols::message, cnt);
+  }
+
+  lv_obj_realign(notificationIcon);
 }
 
 bool WatchFaceLCARS::ShowHeartRate() {  
