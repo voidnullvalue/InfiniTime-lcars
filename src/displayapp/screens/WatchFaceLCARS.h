@@ -42,7 +42,7 @@ namespace Pinetime {
         static bool IsAvailable(Pinetime::Controllers::FS& filesystem);
 
       private:
-  lv_obj_t* background = nullptr;
+        lv_obj_t* background = nullptr;
         uint32_t savedTick = 0;
         uint8_t chargingBatteryPercent = 101; // not a mistake ;)
 
