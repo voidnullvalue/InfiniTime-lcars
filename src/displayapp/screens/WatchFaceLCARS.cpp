@@ -81,8 +81,14 @@ WatchFaceLCARS::WatchFaceLCARS(Controllers::DateTime& dateTimeController,
   
   // Background
   background = lv_img_create(lv_scr_act(), nullptr);
-  lv_img_set_src(background, "F:/images/LCARS.bin");
-  lv_obj_set_pos(background, 0, 0);
+  lv_obj_set_size(background, LV_HOR_RES, LV_VER_RES);
+  lv_obj_align(background, nullptr, LV_ALIGN_CENTER, 0, 0);
+  lv_obj_move_background(background);
+  if (fs.FileExists("/images/LCARS.bin")) {
+    lv_img_set_src(background, "F:/images/LCARS.bin");
+  } else {
+    lv_obj_set_hidden(background, true);
+  }
   
   // System
   system_container = label_container_make(lv_scr_act(), 0, 5, 170, 20, LV_ALIGN_IN_TOP_RIGHT);

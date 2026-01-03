@@ -105,6 +105,11 @@ int FS::Stat(const char* path, lfs_info* info) {
   return lfs_stat(&lfs, path, info);
 }
 
+bool FS::FileExists(const char* path) {
+  lfs_info info = {};
+  return Stat(path, &info) == LFS_ERR_OK;
+}
+
 lfs_ssize_t FS::GetFSSize() {
   return lfs_fs_size(&lfs);
 }
