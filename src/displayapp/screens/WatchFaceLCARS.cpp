@@ -46,7 +46,8 @@ WatchFaceLCARS::WatchFaceLCARS(Controllers::DateTime& dateTimeController,
                                      Controllers::Settings& settingsController,
                                      Controllers::MotionController& motionController,
                                      Controllers::HeartRateController& heartRateController,
-                                     Controllers::FS& filesystem)
+                                     Controllers::SimpleWeatherService& weatherService,
+                                     Controllers::FS& fs)
   : currentDateTime {{}},
     currentNanoSeconds {{}},
     dateTimeController {dateTimeController},
@@ -55,25 +56,26 @@ WatchFaceLCARS::WatchFaceLCARS(Controllers::DateTime& dateTimeController,
     notificationManager {notificationManager},
     settingsController {settingsController},
     motionController {motionController},
-    heartRateController {heartRateController} {
+    heartRateController {heartRateController},
+    weatherService {weatherService} {
 
   // Fonts
   lfs_file f = {};
   
-  if (filesystem.FileOpen(&f, "/fonts/antonio_78.bin", LFS_O_RDONLY) >= 0) {
-    filesystem.FileClose(&f);
+  if (fs.FileOpen(&f, "/fonts/antonio_78.bin", LFS_O_RDONLY) >= 0) {
+    fs.FileClose(&f);
     font_antonio_78 = lv_font_load("F:/fonts/antonio_78.bin");
   }
-  if (filesystem.FileOpen(&f, "/fonts/antonio_33.bin", LFS_O_RDONLY) >= 0) {
-    filesystem.FileClose(&f);
+  if (fs.FileOpen(&f, "/fonts/antonio_33.bin", LFS_O_RDONLY) >= 0) {
+    fs.FileClose(&f);
     font_antonio_33 = lv_font_load("F:/fonts/antonio_33.bin");
   }
-  if (filesystem.FileOpen(&f, "/fonts/antonio_21.bin", LFS_O_RDONLY) >= 0) {
-    filesystem.FileClose(&f);
+  if (fs.FileOpen(&f, "/fonts/antonio_21.bin", LFS_O_RDONLY) >= 0) {
+    fs.FileClose(&f);
     font_antonio_21 = lv_font_load("F:/fonts/antonio_21.bin");
   }
-  if (filesystem.FileOpen(&f, "/fonts/antonio_13.bin", LFS_O_RDONLY) >= 0) {
-    filesystem.FileClose(&f);
+  if (fs.FileOpen(&f, "/fonts/antonio_13.bin", LFS_O_RDONLY) >= 0) {
+    fs.FileClose(&f);
     font_antonio_13 = lv_font_load("F:/fonts/antonio_13.bin");
   }
   
@@ -126,8 +128,8 @@ WatchFaceLCARS::WatchFaceLCARS(Controllers::DateTime& dateTimeController,
   sensors_container = label_container_make(lv_scr_act(), 0, 0, 130, 50, LV_ALIGN_IN_BOTTOM_RIGHT);
   stepValue = label_make_with_font(sensors_container, -5, 0, orangeColor, font_antonio_21, LV_ALIGN_IN_BOTTOM_RIGHT, "0");
   stepIcon = label_make(stepValue, -5, 0, orangeColor, LV_ALIGN_OUT_LEFT_MID, Symbols::shoe);
-  heartbeatValue = label_make_with_font(sensors_container, -5, -25, orangeColor, font_antonio_21, LV_ALIGN_IN_BOTTOM_RIGHT, "0");
-  heartbeatIcon = label_make(heartbeatValue, -5, 0, orangeColor, LV_ALIGN_OUT_LEFT_MID, "");
+  heartbeatOrWeatherValue = label_make_with_font(sensors_container, -5, -25, orangeColor, font_antonio_21, LV_ALIGN_IN_BOTTOM_RIGHT, "0");
+  heartbeatIcon = label_make(heartbeatOrWeatherValue, -5, 0, orangeColor, LV_ALIGN_OUT_LEFT_MID, "");
 
   // Tasks
   taskRefresh = lv_task_create(RefreshTaskCallback, LV_DISP_DEF_REFR_PERIOD, LV_TASK_PRIO_MID, this);
@@ -181,20 +183,20 @@ void WatchFaceLCARS::UpdateHeartRate() {
   heartbeatRunning = heartRateController.State() != Controllers::HeartRateController::States::Stopped;
   if (heartbeat.IsUpdated() || heartbeatRunning.IsUpdated()) {
     if (heartbeat.Get() > 120) {
-      set_label_color(heartbeatValue, redColor);
+      set_label_color(heartbeatOrWeatherValue, redColor);
       set_label_color(heartbeatIcon, redColor);
     } else {
-      set_label_color(heartbeatValue, orangeColor);
+      set_label_color(heartbeatOrWeatherValue, orangeColor);
       set_label_color(heartbeatIcon, orangeColor);
     }
     if (heartbeatRunning.Get()) {
-      lv_label_set_text_fmt(heartbeatValue, "%d", heartbeat.Get());
+      lv_label_set_text_fmt(heartbeatOrWeatherValue, "%d", heartbeat.Get());
       lv_label_set_text_static(heartbeatIcon, Symbols::heartBeat);
     } else {
-      lv_label_set_text_static(heartbeatValue, "");
+      lv_label_set_text_static(heartbeatOrWeatherValue, "");
       lv_label_set_text_static(heartbeatIcon, "");
     }
-    lv_obj_realign(heartbeatValue);
+    lv_obj_realign(heartbeatOrWeatherValue);
     lv_obj_realign(heartbeatIcon);
   }
 }
